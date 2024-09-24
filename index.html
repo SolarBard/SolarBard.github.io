@@ -3,182 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digitized Glass Plate Alignment</title>
+    <title>Main Page</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        header {
+            background-color: #333;
+            color: white;
+            padding: 20px;
+        }
+
+        h1 {
+            margin: 0;
+        }
+
+        section {
+            margin: 50px auto;
+        }
+
+        a {
+            text-decoration: none;
+            color: white;
+            background-color: #007BFF;
+            padding: 10px 20px;
+            border-radius: 5px;
+        }
+
+        a:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <h1>Digitized Glass Plate Image Alignment</h1>
-        <p style="text-align: center; color: #ccc; font-size: 16px;">By Dmytro Krukovskyi</p>
 
+    <header>
+        <h1>Welcome to My Projects</h1>
     </header>
 
-    <section class="content">
-        <h2>Project Overview</h2>
-        <p>The goal of this project is to take the digitized Prokudin-Gorskii glass plate images and, using image processing techniques, automatically produce a color image with as few visual artifacts as possible. 
-            In order to do this, you will need to extract the three color channel images, place them on top of each other, and align them so that they form a single RGB color image. 
-        </p>
-        
-        <h2></h2>
-        <h2>Aligning small images</h2>
-        <p>First thing I tried was to to simply align R, G, B channels on top of each other.</p>
-        <div class="gallery"></div>
-            <img src="img\cathedral_simple_align.jpg.jpg" alt="Glass Plate Image 1">
-            <img src="img/monastery_simple_align.jpg.jpg" alt="Glass Plate Image 2">
-        </div>
-        <p> Then, I tried  to align the G and R channels to the B channel. I used an exhaustive search over a displacement window of [-15, 15] pixels in both x and y directions. For each possible (x, y) displacement:
-            I shifted the G and R channels by the current displacement values. I calculated the alignment score using SSD metric, as it was faster than NCC and produced the same results.
-        </p>
-        <h2>Understanding SSD (Sum of Squared Differences) Metric</h2>
-        <p>The SSD metric is a way to measure how similar two images or parts of images are. Here’s how it works:</p>
-        <ul>
-            <li>You compare the corresponding pixels from two images.</li>
-            <li>For each pair of pixels, you subtract one pixel's value from the other to get the difference.</li>
-            <li>You square that difference to ensure it’s positive, regardless of the direction of the difference.</li>
-            <li>You repeat this process for every pixel in the images, then sum up all these squared differences. The result is the <strong>Sum of Squared Differences (SSD)</strong>.</li>
-        </ul>
-        <p>A lower SSD value means the images are more similar, while a higher SSD value means they are less similar. In image alignment, SSD helps us determine the best alignment between two images.</p>
-        <div class="gallery"></div>
-            <img src="img\cathedral.jpg" alt="Glass Plate Image 1">
-            <img src="img/monastery.jpg" alt="Glass Plate Image 2">
-        </div>
-        <h2>Aligning Large Images</h2>
-<p>
-    The same approach would not work for larger images, as the exhaustive search becomes too slow due to the increased number of pixels. To handle large images efficiently, I implemented a faster method using an <strong>image pyramid</strong>.
-</p>
-<p>
-    An image pyramid represents the image at multiple scales, usually by downscaling the image by a factor of two at each level. The alignment process begins with the smallest (coarsest) version of the image, where an exhaustive search over a smaller displacement window can be done quickly. Once the best alignment is found at this coarse level, the result is refined by applying the same method at progressively higher resolutions (finer levels).
-</p>
-<p>
-    This approach significantly reduces the computational cost of alignment for large images. By starting at a lower resolution, the search space is much smaller, and the displacement estimates are updated as the pyramid is traversed back to the original resolution. This way, the algorithm still achieves high accuracy without the need for an exhaustive search at full resolution.
-</p>
-<p>
-    For the large glass plate scans, this pyramid-based method allowed me to efficiently align the G and R channels to the B channel while maintaining the image's high resolution.
-</p>
-<p>My pyramid has 4 layers and each next layer was two times smaller than the previous one. For the last layer I used a window of size [-15,15] and for every layer above i decreased that quantity by 4. With these parameters each image took less than a minute to compute the best displacement.</p>
-<div class="gallery large-images">
-    <figure>
-        <img src="img/lady.jpg" alt="Glass Plate Image - Lady" loading="lazy">
-        <figcaption>Lady</figcaption>
-    </figure>
-    <figure>
-        <img src="img/train.jpg" alt="Glass Plate Image - Train" loading="lazy">
-        <figcaption>Train</figcaption>
-    </figure>
-</div>
-<h2>Improvements to the base algorithm</h2>
-<p>The pyramid approach works well for all images, except <em>emir.tif</em>. I decided to add the Canny edge detection algorithm on top of the pyramid approach by using the <strong>skimage</strong> library. Basically, I applied the Canny edge detection algorithm at every step of creating a new pyramid layer. This greatly improved the final result in the case of Emir.</p>
+    <section>
+        <h2>Projects</h2>
+        <p><a href="proj1_web/index.html">Project 1: Digitized Glass Plate Image Alignment</a></p>
+        <p><a href="proj2_web/index.html">Project 2: Fun with frequencies</a></p>
 
-<h2>What is Edge Detection?</h2>
-<p>Edge detection is a technique used to find the boundaries or edges in an image. In simple terms, edges are where there’s a significant change in brightness or color. These edges often correspond to important features in the image, such as the outline of an object or a sharp change in texture.</p>
-<p>The Canny edge detection algorithm works by highlighting these edges, making it easier to identify key features for tasks like alignment or object recognition. By applying edge detection, we can focus on the most important parts of an image, ignoring unnecessary details like noise or small color variations.</p>
-<div class="gallery large-images">
-    <figure>
-        <img src="img/emir.jpg" alt="Glass Plate Image - Emir" loading="lazy">
-        <figcaption>Misaligned Emir</figcaption>
-    </figure>
-    <figure>
-        <img src="img/canny_emir.jpg" alt="Glass Plate Image - Emir's Edges" loading="lazy">
-        <figcaption>Emir's edges</figcaption>
-    </figure>
-    <figure>
-        <img src="img/correct_emir.jpg" alt="Glass Plate Image - Emir's Edges" loading="lazy">
-        <figcaption>Emir after applying Canny edge detection</figcaption>
-    </figure>
-</div>
-<h2>Histogram Equalization</h2>
-<p>To enhance colors of the image I decided to use Histogram Equalization. Histogram Equalization is a technique used to improve the contrast of an image by redistributing its pixel intensity values. 
-    This is achieved by stretching the intensity range to ensure that the most frequent pixel values are spread across the entire available range.
-    As a result, details that were previously hidden in darker or lighter areas of the image become more visible. The process works by first 
-    calculating the image's histogram, then normalizing its cumulative distribution function (CDF), and finally mapping the original intensities 
-    to new values based on this distribution.</p>
-    
-    
-    <div class="gallery large-images">
-        <figure>
-            <img src="img/histo_emir.jpg" alt="Colorful Emir" loading="lazy">
-            <figcaption>Colorful Emir</figcaption>
-        </figure>
-    </div>
-    <h2>Gray World White Balancing</h2>
-<p>In addition to enhancing colors with histogram equalization, I applied the Gray World Assumption for white balancing. White balancing is a technique used to adjust the colors in an image so that they look more natural, especially under different lighting conditions.</p>
-<p>The Gray World Assumption works by assuming that the average color of an image should be a neutral gray. Based on this assumption, the algorithm calculates the average intensity of the red, green, and blue channels and adjusts them so that the overall color balance shifts toward gray. This helps remove color casts, making the image look more balanced and natural in terms of lighting.</p>
-<p>My first few attempts of creating this balancing failed, because I didn't crop the image and I took into account a lot of unnecessary colors on the edges, but after I applied 10% crop to each side the balancing looks normal. </p>
+    </section>
 
-    <div class="gallery large-images">
-        <figure>
-            <img src="img/sculpture_without_grayscale.jpg" alt="sc-ng" loading="lazy">
-            <figcaption>Sculpture before applying white balancing</figcaption>
-        </figure>
-        <figure>
-            <img src="img/sculpture_with_grayscale.jpg" alt="sc-ng" loading="lazy">
-            <figcaption>Sculpture after applying white balancing</figcaption>
-        </figure>
-    </div>
-<h2>Final remarks and results</h2>
-<p>I also tried to implement an auto cropping feature based on the variance of pixels, but in the end I decided to leave the edges in the final result, so the photos have this old feeling.
-    I mean they are more than 100 hundred years old! Also, I played with different cropping multipliers and decided to set it to zero, as I haven't seen any improvments from using cropping.
-</p>
-<div class="gallery large-images">
-    <figure>
-        <img src="final_res/emir.jpg" alt="sc-ng" loading="lazy">
-        <figcaption>g:(49, 23) r:(107, 40)</figcaption>
-    </figure>
-    <figure>
-        <img src="final_res/church.jpg" alt="sc-ng" loading="lazy">
-        <figcaption>g:(25, 4) r:(58, -4)</figcaption>
-    </figure>
-    <figure> 
-        <img src="final_res/harvesters.jpg" alt="sc-ng" loading="lazy">
-        <figcaption>g:(55, 10) r:(117, 11)</figcaption>
-    </figure>
-    <figure>
-        <img src="final_res/icon.jpg" alt="sc-ng" loading="lazy">
-        <figcaption>g:(38, 16) r:(88, 22)</figcaption>
-    </figure>
-    <figure>
-        <img src="final_res/lady.jpg" alt="sc-ng" loading="lazy">
-        <figcaption>g:(56, 10) r:(120, 13)</figcaption>
-    </figure>
-    <figure>
-        <img src="final_res/melons.jpg" alt="sc-ng" loading="lazy">
-        <figcaption>g:(79, 9) r:(177, 14)</figcaption>
-    </figure>
-    <figure>
-        <img src="final_res/onion_church.jpg" alt="sc-ng" loading="lazy">
-        <figcaption>g:(52, 24) r:(107, 34)</figcaption>
-    </figure>
-    <figure>
-        <img src="final_res/sculpture.jpg" alt="sc-ng" loading="lazy">
-        <figcaption>g:(33, -11) r:(140, -27)</figcaption>
-    </figure>
-    <figure>
-        <img src="final_res/self_portrait.jpg" alt="sc-ng" loading="lazy">
-        <figcaption>g:(78, 30) r:(174, 37)</figcaption>
-    </figure>
-    <figure>
-        <img src="final_res/three_generations.jpg" alt="sc-ng" loading="lazy">
-        <figcaption>g:(56, 11) r:(106, 7)</figcaption>
-    </figure>
-    <figure>
-        <img src="final_res/train.jpg" alt="sc-ng" loading="lazy">
-        <figcaption>g:(48, 2) r:(84, 28)</figcaption>
-    </figure>
-    <figure>
-        <img src="img/tobolsk.jpg" alt="sc-ng" loading="lazy">
-        <figcaption>g:(3, 3) r:(6, 3)</figcaption>
-    </figure>
-    <figure>
-        <img src="img/cathedral.jpg" alt="sc-ng" loading="lazy">
-        <figcaption>g:(5, 2) r:(12, 3)</figcaption>
-    </figure>
-    <figure>
-        <img src="img/monastery.jpg" alt="sc-ng" loading="lazy">
-        <figcaption>g:(-3, 2) r:(3, 2)</figcaption>
-    </figure>
-</div>
-
-
-</section>
 </body>
 </html>
