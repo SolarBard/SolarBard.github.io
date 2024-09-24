@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Showcase - Fun with Filters</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Project 2: Fun with Filters and Frequencies</h1>
+        <p>by Dmytro Krukovskyi</p>
+    </header>
+
+    <main>
+        <!-- Part 1.1: Filters -->
+        <section class="project-section">
+            <h3>Part 1.1: Filters</h3>
+            <p>We can convolve the image with the finite difference operators D<sub>x</sub> = (1, -1)<sup>T</sup> and D<sub>y</sub> = (1, -1) 
+                to find the gradient. This will help us identify the edges in the picture by applying a certain threshold to the magnitude.</p> 
+            <p>The formula for the magnitude is √((df/dx)<sup>2</sup> + (df/dy)<sup>2</sup>), and the threshold value I used is 0.3.</p>
+            <!-- Image Gallery for Part 1.1 -->
+            <div class="image-gallery">
+                <img src="pics/cameraman copy.png" alt="Cameraman">
+                <img src="pics/cameraman_der.png" alt="Cameraman Derivative">
+            </div>
+        </section>
+
+        <!-- Part 1.2: Derivative of Gaussian (DoG) Filter -->
+        <section class="project-section">
+            <h3>Part 1.2: Derivative of Gaussian (DoG) Filter</h3>
+            <p>We can improve the previous results by applying Gaussian Blur to the original image. We will use the cv2 library to get a 1D Gaussian kernel (cv2.getGaussianKernel())
+                and then take an outer product with its transpose to obtain a 2D Gaussian kernel. Additionally, instead of convolving twice, we can convole derivative with the Gaussian kernel to achive the same result.</p>
+            <img src="pics/gaussian_camerama_2conv.png" alt="">
+            <div class="image-gallery">
+                <img src="pics/gauss_cameraman.png" alt="Gaussian Cameraman">
+            </div>
+        </section>
+
+        <!-- Part 2: Image Sharpening -->
+        <section class="project-section">
+            <h3>Part 2: Image Sharpening</h3>
+            <p>To sharpen the image, I applied Gaussian Blur to obtain the low frequencies. Then, I subtracted the blurred image from the original to 
+                extract the high frequencies. The final image is calculated using the formula: <em>im + alpha * (im - blurred)</em>. I achieved the best results with an alpha value of 1.5.</p>
+            <div class="image-gallery">
+                <img src="pics/sharp_taj.png" alt="Sharpened Taj">
+                <img src="pics/sharp_colors.png" alt="Sharpened Colors">
+                <img src="pics/machine_sharp.png" alt="Machine Sharpened">
+            </div>
+            <p>Applying sharpening to an already sharp image produced noticeable results, especially around the edges of the cogs, making them more visible and defined.</p>
+        </section>
+
+        <!-- Part 2.2: Hybrid Images -->
+        <section class="project-section">
+            <h3>Part 2.2: Hybrid Images</h3>
+            <p>For this part, I implemented the creation of hybrid images using the method outlined by Oliva, Torralba, and Schyns in their 2006 SIGGRAPH paper. 
+                Hybrid images combine the low-frequency (smooth) content of one image with the high-frequency (detailed) content of another, 
+                resulting in different visual interpretations at varying distances. To achieve this, I applied a Gaussian filter for low-pass filtering and a 
+                high-pass filter by subtracting the Gaussian-filtered image from the original. I then blended the two images. Additionally, I used frequency analysis to visualize 
+                the process by displaying the log magnitude of the Fourier transforms.</p>
+            <p>Original images:</p>
+            <div class="image-gallery-row">
+                <img src="pics/DerekPicture.jpg" alt="Derek">
+                <img src="pics/nutmeg.jpg" alt="Nutmeg">
+            </div>
+            <p>Final result:</p>
+            <div class="image-gallery">
+                <img src="pics/2.1_debug_fin.png" alt="Final Hybrid Image">
+            </div>
+            <p>Additional examples:</p>
+            <div class="image-gallery">
+                <img src="pics/church-stalin_mixed.png" alt="Church Stalin Mixed">
+                <img src="pics/catlion.png" alt="Catlion">
+            </div>
+        </section>
+
+        <!-- Part 2.3: Multi-resolution Blending and the Oraple Journey -->
+        <section class="project-section">
+            <h3>Part 2.3: Multi-resolution Blending and the Oraple Journey</h3>
+            <p>I first created Gaussian stacks for both input images to capture details at different frequencies. These Gaussian stacks serve as the foundation for constructing the Laplacian stacks, which highlight the edges and finer details by capturing the differences between consecutive Gaussian levels.</p>
+            <p>Additionally, I created a Gaussian stack for a binary mask to define the blending seam between the images. At each level of the stack, I blended the images by combining corresponding levels from both Laplacian stacks, weighted by the mask's Gaussian stack. This approach smoothed the transition between the images, ensuring a seamless blend. Here are the Gaussian and Laplacian stacks:</p>
+            <div class="image-gallery">
+                <img src="pics/apple_gaussian_lap.png" alt="Apple Gaussian Laplacian">
+                <img src="pics/orange_gaussian_laplacian.png" alt="Orange Gaussian Laplacian">
+            </div>
+            <p>Here is the visualization of the entire process of blending:</p>
+            <div class="image-gallery">
+                <img src="pics/lvl0.png" alt="Level 0">
+                <img src="pics/lvl1.png" alt="Level 1">
+                <img src="pics/lvl2.png" alt="Level 2">
+                <img src="pics/lvl3.png" alt="Level 3">
+                <img src="pics/lvl4.png" alt="Level 4">
+            </div>
+            <p>Here is the final result:</p>
+            <div class="image-gallery">
+                <img src="pics/final_oapple.png" alt="Final Oraple Image">
+            </div>
+        </section>
+
+        <!-- Irregular Mask Examples -->
+        <section class="project-section">
+            <p>Here are some examples of the irregular mask in action:</p>
+            
+            <div class="image-gallery-row">
+                <img src="pics/road.jpg" alt="Road">
+                <img src="pics/biker.jpg" alt="Biker">
+                <img src="pics/biker_mask.png" alt="Biker Mask">
+            </div>
+                <img src="pics/bikerlvl0.png" alt="Level 0">
+                <img src="pics/bikerlvl1.png" alt="Level 1">
+                <img src="pics/bikerlvl2.png" alt="Level 2">
+                <img src="pics/bikerlvl3.png" alt="Level 3">
+                <img src="pics/bikerlvl4.png" alt="Level 4">
+            <p>Here is the final result:</p>
+            <img src="pics/final_biker.png" alt="">
+            <div class="image-gallery-row">
+                    <img src="pics/underwater.jpg" alt="Underwater">
+                    <img src="pics/rick.png" alt="Rick">
+                    <img src="pics/real_rick.png" alt="Real Rick">
+                </div>
+                
+                <div class="image-gallery">
+                    <img src="pics/ricklvl0.png" alt="Level 0">
+                    <img src="pics/ricklvl1.png" alt="Level 1">
+                    <img src="pics/ricklvl2.png" alt="Level 2">
+                    <img src="pics/ricklvl3.png" alt="Level 3">
+                    <img src="pics/ricklvl4.png" alt="Level 4">
+                </div>
+            </div>
+            <div class="image-container">
+                <img src="pics/rel_blended_rick.png" alt="Blended Rick">
+            </div>
+        </section>
+
+        <section class="project-section">
+            <h3>Failed Hybrid Image:</h3>
+            <p>I think this attempt of creating hybrid image failed because images had totally different proportions and aligning two images was tricky. 
+                I think that using smaller face that looks to the left would work.
+            </p>
+            <img src="pics/failed_pic.png" alt="Failed Hybrid Image">
+        </section>
+        <section class="project-section">
+            <h3>Here is a random blended image I decided to include:</h3>
+            <p>Ship's mask</p>
+            <img src="pics/ship_mask.png" alt="">
+            <img src="pics/final_bland_ship.png" alt="">
+            <h3>Conclusion:</h3>
+            <p>I liked this project, becuase playing with blending different frequencies was really fun. 
+                It is really interesting how our perception of image changes depending on the viewing distance.
+               Also, I thought blending images without a clear seam would be much harder, but now I know that It's easy.
+                
+            </p>            
+        </section>
+    </main>
+    
+</body>
+</html>

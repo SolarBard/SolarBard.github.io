@@ -1,0 +1,21 @@
+.image-gallery-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px; /* Adds space between the images */
+}
+
+.image-gallery-row img {
+    width: 100%; /* Allow images to scale with available space */
+    height: auto; /* Maintain the aspect ratio without cropping */
+    max-height: 300px; /* Set a max height to ensure images don't get too tall */
+    object-fit: contain; /* Prevent cropping while filling the space */
+}
+
+.image-gallery-row {
+    width: 100%; /* Ensures the div fills the width of the page */
+}
+
+.image-gallery-row img {
+    flex: 1; /* Ensure images take up the available space evenly */
+}
