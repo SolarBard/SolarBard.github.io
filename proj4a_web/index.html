@@ -150,6 +150,77 @@
                 </div>  
                 <div class="image-container">
                     <img src="img/view copy/new_panorama.jpg" alt="">
-                </div>  
+                </div>
+        <h2>Part B: Feature Matching for Autostitching</h2>  
+        <p>In part A I manually selected corresponding points. In this part I implemented automatic detection of such points by replicating 
+            “Multi-Image Matching using Multi-Scale Oriented Patches” by Brown et al paper.  The main features that are implemented are the following.</p>
+            <ol>
+                <li>Detecting corner features in an image using Harris detector</li>
+                <li>Extracting a Feature Descriptor for each feature point</li>
+                <li>Use a robust method (RANSAC) to compute a homography</li>
+                <li> Produce mosaic</li>
+              </ol>
+              <h2>Detecting Corner features</h2>
+              <p>I used Harris detector. The Harris feature detector is an algorithm used in computer vision to identify corners or 
+                interest points in an image. It calculates a corner response function based on the local variations of image intensity, 
+                identifying points where there is significant change in multiple directions, making them ideal for tracking or matching 
+                between images. I limited number of points to 10 thousand.
+              </p>
+              <img src="img/harris_corners_ex.png" alt="">
+              <h2>Adaptive Non-Maxmimal Suppression</h2>
+              <p>Using Adaptive Non-Maximal Suppression (ANMS) allows for reducing the number of detected corners while ensuring that the 
+                points are evenly distributed across the image. This approach is particularly useful in maintaining spatial coverage. 
+                After experimentation, I decided to retain 1000 
+                points as a final selection, striking a balance between computational efficiency and sufficient feature density. 
+                Below is the formula applied, as derived from the original paper, to achieve this selection and spacing of feature points.
+              </p>
+              <img src="img/anms.png" alt="">
+              <img src="img/after_anms.png" alt="">
+              <h2>Feature Descriptors</h2>
+              <p>To effectively match feature points across images, it's essential to capture more information than a single pixel. 
+                Therefore, feature descriptors are used to encapsulate the local image characteristics around each keypoint, ensuring 
+                consistency across different views of the same scene. In this approach, a 40x40 pixel patch is extracted around each 
+                detected feature point and then downsampled to an 8x8 grayscale patch. These patches are normalized and demeaned to enhance 
+                robustness against lighting variations.
+              </p>
+              <img src="img/example_feature_detector.png" alt="">
+                <h2>Feature matching</h2>
+                <p>After extracting feature descriptors, I matched keypoints between image pairs using the Sum of Squared Differences (SSD) 
+                    as the similarity measure. For each descriptor in the first image, SSD was calculated against all descriptors in the 
+                    second image to find the closest matches. To ensure reliability, Lowe's ratio test was applied: the ratio of the smallest 
+                    SSD to the second smallest SSD was computed, and only matches with a ratio below a set threshold (0.65) were retained. 
+                    This approach filters out ambiguous matches, retaining only those that are distinctly better than the alternatives. 
+                </p>           
+                <img src="img/before_ransac.png" alt="">
+                <h2>RANSAC</h2>
+                <p>After establishing feature correspondences between images, 
+                    some matches may be incorrect or outliers, which can adversely affect the accuracy of the homography matrix. 
+                    To address this, I employed Random Sample Consensus (RANSAC), a robust algorithm that mitigates the influence of these 
+                    outliers.
+                    The 4-point RANSAC algorithm operates as follows:
+                    </p>
+                    <ol>
+                        <li>Random Sampling: Select four random pairs of matched keypoints.</li>
+                        <li>Homography Computation: Calculate the homography matrix H</li>
+                        <li>Inlier Detection: Determine which keypoint pairs fit the homography well by measuring if the distance between the 
+                            transformed points and their counterparts is below a threshold ϵ. I set ϵ = 1</li>
+                        <li> Repeat the above steps for some number of iterations. I ran It for 6000 iterations</li>
+                      </ol>
+                      <img src="img/after_ransace.png" alt="">
+                      <p>After I get homography matrix I apply warping from the part A and get the final image as a result.</p>
+                      <div class="image-container">
+                        <img src="img/night_ransac.png" alt="">
+                    </div>
+                    <div class="image-container">
+                        <img src="img/view_ransac.jpg" alt="">
+                    </div>
+                    <div class="image-container">
+                        <img src="img/scu_ransac.jpg" alt="">
+                    </div>
+            <h2>Final Remarks</h2>
+            <p>The project was very interesting especially the B part. I think I should have spent more time on the blending images when stiching 
+                panoramas, because on some pictures seams at the bottom are visible. Also, adding some kind of color normalization will really make
+                a difference, then the final image will look like panorama that the phone generates.
+            </p>
     </body>
 </html>
