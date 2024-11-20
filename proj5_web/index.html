@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Morphing Project Write-Up</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .container {
+            width: 95%;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2, h3 {
+            color: #005f99;
+        }
+        p {
+            margin-bottom: 20px;
+        }
+        code {
+            background-color: #f1f1f1;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        ul {
+            margin-bottom: 20px;
+            padding-left: 20px;
+        }
+        .image-container {
+            display: flex;
+            justify-content: center;
+            
+        }
+        figure {
+            text-align: center;
+        }
+        .image-container img {
+            width: 500px; /* Set fixed width to make both images equal */
+            height: auto;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+        figcaption {
+            margin-top: 10px;
+            font-style: italic;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>Project 5: Diffusion Models</h1>
+    <h2>Part 0: Setup</h2>
+    <p>
+        In this project I am going to implement diffusion sampling loops and use them to create optical illusions.
+        In the first half of the project I am going to use DeepFloyd IF diffusion model from Stability AI.
+    </p>
+
+    <p>Here are few examples of generated images with different number of inference steps.</p>
+    <div class="image-container">
+        <figure>
+            <img src="img/samplings/download.png" alt="">
+            <figcaption>num_inference_steps=20</figcaption>
+        </figure>
+        <figure>
+            <img src="img/samplings/download (1).png" alt="">
+            <figcaption>num_inference_steps=20</figcaption>
+        </figure>
+        <figure>
+            <img src="img/samplings/download (2).png" alt="">
+            <figcaption>num_inference_steps=20</figcaption>
+        </figure>
+    </div>
+    <div class="image-container">
+        <figure>
+            <img src="img/samplings/download (3).png" alt="">
+            <figcaption>num_inference_steps=50</figcaption>
+        </figure>
+        <figure>
+            <img src="img/samplings/download (4).png" alt="">
+            <figcaption>num_inference_steps=50</figcaption>
+        </figure>
+        <figure>
+            <img src="img/samplings/download (5).png" alt="">
+            <figcaption>num_inference_steps=50</figcaption>
+        </figure>
+    </div>
+    <div class="image-container">
+        <figure>
+            <img src="img/samplings/download (6).png" alt="">
+            <figcaption>num_inference_steps=100</figcaption>
+        </figure>
+        <figure>
+            <img src="img/samplings/download (7).png" alt="">
+            <figcaption>num_inference_steps=100</figcaption>
+        </figure>
+        <figure>
+            <img src="img/samplings/download (8).png" alt="">
+            <figcaption>num_inference_steps=100</figcaption>
+        </figure>
+    </div>
+    <h1>Part 1: Sampling Loops</h1>
+    <p>In this part of the problem set, I will write "sampling loops" that use the pretrained DeepFloyd denoisers. 
+        These should produce high quality images such as the ones generated above.
+    </p>
+    <p>Starting with a clean image,  x0 , we can iteratively add noise to an image, obtaining progressively more and more noisy versions of the image,  xt , until we're left with basically pure noise at timestep  t=T . 
+        When  t=0 , we have a clean image, and for larger  t  more noise is in the image.
+        A diffusion model tries to reverse this process by denoising the image. 
+        By giving a diffusion model a noisy  xt  and the timestep  t , the model predicts the noise in the image. 
+        With the predicted noise, we can either completely remove the noise from the image, to obtain an estimate of  x0 , or we can remove 
+        just a portion of the noise, obtaining an estimate of  x^t−1 , with slightly less noise.
+        
+        To generate images from the diffusion model (sampling), we start with pure noise at timestep  T  sampled from a gaussian distribution, 
+        which we denote  x^T . We can then predict and remove part of the noise, giving us  x^T−1 . Repeating this process until we arrive at  x0  
+        gives us a clean image.</p>
+        <p>Here is an example of the forward process applied to an image.</p>
+    <img src="img/forward_process/download.png" alt="">
+    <p>I tried Gaussian blur to denoise the image with kernel size 5 and sigma 3.</p>
+    <img src="img/g_blur/download (2).png" alt="">
+    <p>Next, I implemented one-step denoising. Here is an approximate algorithm.</p>
+    <ul>
+        <li>Using the UNet, denoise the image by estimating the noise. </li>
+         <li>Estimate the noise in the new noisy image, by passing it through unet </li>
+         <li>  Remove the noise from the noisy image to obtain an estimate of the original image. </li>
+    </ul>
+    <img src="img/1.3/download.png" alt="">
+    <img src="img/1.3/download (1).png" alt="">
+    <img src="img/1.3/download (2).png" alt="">
+    <h2>Iterative denoising</h2>
+    <p>Diffusion models are designed to denoise iteratively. In this part we will implement this.
+        In theory, we could start with noise  x_1000  at timestep  T=1000 , denoise for one step to get an estimate of  x_999 , 
+        and carry on until we get  x_0 . But this would require running the diffusion model 1000 times, which is quite slow (and costs $$$).
+        It turns out, we can actually speed things up by skipping steps. 
+        To skip steps we can create a list of timesteps that we'll call strided_timesteps, which will be much shorter than the full list of 
+        1000 timesteps. strided_timesteps[0] will correspond to the noisiest image (and thus the largest  t ) and strided_timesteps[-1] will 
+        correspond to a clean image (and thus  t=0 ). One simple way of constructing this list is by introducing a regular stride step 
+        (e.g. stride of 30 works well).
+        
+        On the ith denoising step we are at  t=  strided_timesteps[i], and want to get to  t′=  strided_timesteps[i+1] 
+        (from more noisy to less noisy). To actually do this, we have the following formula:</p>
+        <img src="img/screenshot/Screenshot 2024-11-18 152158.png" alt="">
+        <p>Here is a gradual change from a noisy to a clean image.</p>
+        <div class="image-container">
+            <figure>
+                <img src="img/iterative_denoise/steps/d.png" alt="">
+            </figure>
+            <figure>
+                <img src="img/iterative_denoise/steps/d1.png" alt="">
+            </figure>
+            <figure>
+                <img src="img/iterative_denoise/steps/d2.png" alt="">
+            </figure>
+        </div>
+        <div class="image-container">
+            <figure>
+                <img src="img/iterative_denoise/steps/d3.png" alt="">
+            </figure>
+            <figure>
+                <img src="img/iterative_denoise/steps/d4.png" alt="">
+            </figure>
+        </div>
+        <img src="img/iterative_denoise/steps/fin.png" alt="">
+        <p>The same algorithm can be used to generate images from scratch.</p>
+        <img src="img/1.5/download.png" alt="">
+        <h2>Classifier Free Guidance</h2>
+        <p>
+            You may have noticed that some of the generated images in the prior section are not very good. 
+            In order to greatly improve image quality (at the expense of image diversity), we can use a technique called Classifier-Free Guidance.
+            In CFG, we compute both a noise estimate conditioned on a text prompt, and an unconditional noise estimate.
+            We denote these  ϵ_c  and  ϵ_u . Then, we let our new noise estimate be
+        </p>
+        <img src="img/screenshot/Screenshot 2024-11-18 223634.png" alt="">
+        <p>where  γ  controls the strength of CFG.</p>
+        <img src="img/cfg/d.png" alt="">
+        <p>In part 1.4, we take a real image, add noise to it, and then denoise. This effectively allows us to make edits to existing images. The more noise we add, the larger the edit will be. This works because in order to denoise an image, the diffusion model must to some extent "hallucinate" new things -- the model has to be "creative." Another way to think about it is that the denoising process "forces" a noisy image back onto the manifold of natural images.
+
+            Here, we're going to take the original test image, noise it a little, and force it back onto the image manifold without any conditioning. Effectively, we're going to get an image that is similar to the test image (with a low-enough noise level). This follows the SDEdit algorithm.
+            
+            To start, please run the forward process to get a noisy test image, and then run the iterative_denoise_cfg function using a starting index of [1, 3, 5, 7, 10, 20] steps and show the results, labeled with the starting index. You should see a series of "edits" to the original image, gradually matching the original image closer and closer.
+            </p>
+        <img src="img/1.6/download.png" alt="">
+        <img src="img/1.6/dogo.png" alt="">
+        <img src="img/1.6/taxi.png" alt="">
+        <p>This procedure works particularly well if we start with a nonrealistic image (e.g. painting, a sketch, some scribbles) 
+            and project it onto the natural image manifold.</p>
+            <img src="img/1.7/avocado.png" alt="">
+            <img src="img/1.7/avo_mod.png" alt="">
+        <p>Here are few example with hand drawings</p>
+        <div class="image-container">
+            <img src="img/1.7/guy.png" alt="">
+        </div>
+        <div class="image-container">
+            <img src="img/1.7/horse.png" alt="">
+        </div>
+        
+        <h2>Inpaiting</h2>
+        <p>We can use the same procedure to implement inpainting (following the RePaint paper). That is, given an image  xorig , and a binary mask  m , 
+            we can create a new image that has the same content where  m  is 0, but new content wherever  m  is 1.
+            To do this, we can run the diffusion denoising loop. But at every step, after obtaining  xt , we "force"  xt  to have the same 
+            pixels as  xorig  where  m  is 0, i.e.:
+        </p>
+        <img src="img/1.7/Screenshot 2024-11-19 002451.png" alt="">
+        
+            <p>
+                
+            Essentially, we leave everything inside the edit mask alone, but we replace everything outside the edit mask with our original image --
+            with the correct amount of noise added for timestep  t .
+            </p>
+            <img src="img/1.7/mask_tower.png" alt="" style="width: 100%;">
+            <p>WE GET A BEARMAN.</p>
+            <img src="img/mask_replacment/bearmen.png" alt="" style="width: 100%;">
+            <p>Here I got a giant flower.</p>
+            <img src="img/mask_replacment/flower.png" alt="" style="width: 100%;">
+            <h2>Text-Conditioned Image-to-image Translation</h2>
+            <p>By changing the promot we can change the way the image is modified.</p>
+            <p>We use different noise levels for each prompt [1, 3, 5, 7, 10, 20] which should give us an image that is a closer representation of the original image 
+                the higher up we go.
+
+            </p>
+            <img src="img/diff_promts/barista.png" alt="" style="width: 100%;">
+            <img src="img/diff_promts/rocket.png" alt="" style="width: 100%;">
+            <h2>Visual Anagrams</h2>
+            <p>
+In this part, we will create optical illusions — images that appear as one thing but transform into something entirely different when 
+flipped upside down. To achieve this, we modify the way noise is calculated during the image generation process. At step t, we denoise an
+ image x_t using one prompt to obtain epsilon_1. Simultaneously, we flip x_t upside down and denoise it with a different prompt to get 
+ another noise estimate epsilon_2. After flipping epsilon_2 back to its original orientation, we average epsilon_1 and epsilon_2 to compute 
+ the final noise estimate. This approach allows us to create fascinating illusions that change depending on their orientation.
+            </p>
+            <img src="img/anagrams/download.png" alt="">
+            <img src="img/anagrams/download (1).png" alt="">
+            <img src="img/anagrams/download (2).png" alt="">
+            <h2>Hybrid images</h2>
+            <p>
+                In this part, we will implement Factorized Diffusion to create hybrid images, similar to techniques used in previous projects. 
+                This method involves combining noise estimates generated from two distinct text prompts to blend visual elements. 
+                Specifically, we compute the noise estimate epsilon_1 using one prompt and epsilon_2 using another prompt. 
+                We then apply a low-pass filter to epsilon_1 and a high-pass filter to epsilon_2, combining the results to produce the 
+                final noise estimate epsilon. This technique enables the creation of hybrid images, where the visual perception shifts 
+                depending on viewing distance — for example, an image that looks like a "skull" from far away but transforms into a 
+                "waterfall" up close.
+            </p>
+            <p>I got the best result with the skull and pencil with a mountain</p>
+            <div class="image-container" style="display: flex; flex-wrap: wrap;">
+                <figure>
+                    <img src="img/hybrid/skull.png" alt="" >
+                    <figcaption>zoomed out is a skull</figcaption>
+                </figure>
+                <figure>
+                    <img src="img/hybrid/penrocket.png" alt="">
+                    <figcaption>zoomed out is a rocket</figcaption>
+                </figure>
+                <figure>
+                    <img src="img/hybrid/mountain.png" alt="">
+                    <figcaption>zoomed out is a village</figcaption>
+                </figure>
+                <figure>
+                    <img src="img/hybrid/mountain_again.png" alt="">
+                    <figcaption>I think this is the best one</figcaption>
+                </figure>
+            </div>
+
+
+
+
+
+
+            <h2>Project 5B</h2>
+            <p>In this section of the project, we train a diffusion model on the MNIST dataset to generate images of MNIST digits. We'll first start by training a UNet to do single-step denoising, and then we will train a UNet to iteratively denoise by adding time conditioning and class conditioning. We will sample results along the way to see what the model outputs.
+            </p>
+            <h2>Part 1: Training a Single-Step Denoising UNet</h2>
+            <p>
+                In this part, we implement a denoiser as a UNet. The UNet takes in an image with some level of noise added to it, and the UNet outputs a prediction of what the denoised images looks like. We will use the MNIST dataset, which consists of 28×28
+ pixel black and white images of digits. Below is a diagram of the UNet architecture.
+            </p>
+            <img src="img/screenshot/Screenshot 2024-11-19 125854.png" alt="">
+            <p>We need noisy images to test the Unet we trained. I am using the following equatin to add noise to images.
+                z=x+σϵ,ϵ∼N(0,I). Here is the visualization of different noise levels.
+            </p>
+            <img src="img/5b/part_1/download.png" alt="">
+            <img src="img/5b/part_1/download (1).png" alt="">
+            <img src="img/5b/part_1/download (2).png" alt="">
+            <img src="img/5b/part_1/download (3).png" alt="">
+            <img src="img/5b/part_1/download (4).png" alt="">
+            <p>I trained the model on sigma = 0.5 with batch size of 256 and I used Adam optimizer and MSE as a loss function. 
+                Here is the graph of a training loss for 5 epochs.
+            </p>
+            <img src="img/5b/part_1/loss_curve_uncond.png" alt="">
+            <p>After we trained the model we will test denoising on different noise levels. Here are results of our model for sigma = 0.5
+                for epoch 1 and 5.
+            </p>
+            <img src="img/5b/part_1/e9f69f31-d5a0-4b92-a545-a6b801436b9a.png" alt="">
+            <img src="img/5b/part_1/67ed7545-8cab-43c6-b4b0-4acc2809d134.png" alt="">
+            <p>We can also run our model for different sigmas.</p>
+            <img src="img/5b/part_1/seven.png" alt="">
+            <h2>Part 2: Training a Diffusion Model</h2>
+            <p>We can slightly modify the previous model to predict the noise insteaad of the clean image. This allows to generate a pure image 
+                using iterative denoising. Using this equation:
+            </p>
+            <img src="img/screenshot/Screenshot 2024-11-19 200459.png" alt="">
+            <p>we will generate a noisy image x_t from the pure image x_0. Here is the modified model's diagram.</p>
+            <img src="img/screenshot/Screenshot 2024-11-19 200813.png" alt="">
+            <p>Training algorithm is slightly modified compared to one-step denoiser and can be fuond in DDPM paper.</p>
+            <img src="img/5b/part_2/training_loss_time.png" alt="">
+            <p>Below are result for different epochs.</p>
+            <div class="image-container" style="display: flex; flex-wrap: wrap;">
+                <figure>
+                    <img src="img/5b/time_unet/samples_epoch_1.png" alt="" >
+                    <figcaption>epoch=1</figcaption>
+                </figure>
+                <figure>
+                    <img src="img/5b/time_unet/samples_epoch_5.png" alt="">
+                    <figcaption>epoch=5</figcaption>
+                </figure>
+                <figure>
+                    <img src="img/5b/time_unet/samples_epoch_10.png" alt="">
+                    <figcaption>epoch=10</figcaption>
+                </figure>
+                <figure>
+                    <img src="img/5b/time_unet/samples_epoch_15.png" alt="">
+                    <figcaption>epoch=15</figcaption>
+                </figure>
+                <figure>
+                    <img src="img/5b/time_unet/samples_epoch_20.png" alt="">
+                    <figcaption>epoch=20</figcaption>
+                </figure>
+            </div>
+            <h2>Adding Class-Conditioning to UNet</h2>
+            <p>Results are not very accurate when using time conditioned UNet. To better control the image generation, we can condition our UNet on the class of digits.
+                To represent each class, we will use a one-hot vector. We will also add two additional 
+                fully-connected blocks to feed in our class. Moreover, we will also implement dropout, where 10% of the time, 
+                we drop the class conditioning by setting the one-hot vector to 0. This is so that our UNet will still work even if it 
+                isn't conditioned on a class. For training we are going to use algorithm 3 from DDPM paper.
+            </p>
+            <img src="img/5b/part_2/training_loss_time.png" alt="">
+            <p>Class conditioning vastly improves quality of generated digits.</p>
+            <div class="image-container" style="display: flex; flex-wrap: wrap;">
+                <figure>
+                    <img src="img/5b/part_2/samples_epoch_1.png" alt="" >
+                    <figcaption>epoch=1</figcaption>
+                </figure>
+                <figure>
+                    <img src="img/5b/part_2/samples_epoch_5.png" alt="">
+                    <figcaption>epoch=5</figcaption>
+                </figure>
+                <figure>
+                    <img src="img/5b/part_2/samples_epoch_10.png" alt="">
+                    <figcaption>epoch=10</figcaption>
+                </figure>
+                <figure>
+                    <img src="img/5b/part_2/samples_epoch_15.png" alt="">
+                    <figcaption>epoch=15</figcaption>
+                </figure>
+                <figure>
+                    <img src="img/5b/part_2/samples_epoch_20.png" alt="">
+                    <figcaption>epoch=20</figcaption>
+                </figure>
+            </div>
+
+</body>
+</html>
